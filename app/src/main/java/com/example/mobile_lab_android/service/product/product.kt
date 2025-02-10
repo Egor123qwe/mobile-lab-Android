@@ -61,8 +61,10 @@ class ProductAdapter(
             binding.root.setOnClickListener {
                 val context = binding.root.context
                 val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                    putExtra("product_id", product.id)
                     putExtra("product_name", product.name)
                     putExtra("product_description", product.description) // Передаем описание
+                    putStringArrayListExtra("product_images", ArrayList(product.images)) // Передаем список URL изображений
                 }
                 context.startActivity(intent)
             }
