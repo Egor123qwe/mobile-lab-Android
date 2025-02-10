@@ -17,6 +17,7 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ProductDetailActivity" android:exported="false"/>
         <activity android:name=".SignInActivity" android:exported="false"/>
         <activity android:name=".SignUpActivity" android:exported="false"/>
         <activity android:name=".HomeActivity" android:exported="false"/>

@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-class Auth: ViewModel() {
+class Auth : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
@@ -105,7 +105,15 @@ class Auth: ViewModel() {
     private fun saveUserData(userId: String, name: String, email: String, completion: (Boolean) -> Unit) {
         val userData = mapOf(
             "name" to name,
-            "email" to email
+            "email" to email,
+            "dateOfBirth" to "-",
+            "phoneNumber" to "-",
+            "address" to "-",
+            "bio" to "-",
+            "occupation" to "-",
+            "website" to "-",
+            "socialMedia" to "-",
+            "additionalInfo" to "-"
         )
 
         db.collection("users").document(userId).set(userData)
