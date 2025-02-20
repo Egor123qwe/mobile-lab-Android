@@ -2,6 +2,7 @@ package com.example.mobile_lab_android
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.widget.ViewPager2
@@ -19,7 +20,10 @@ import android.widget.TextView
 import androidx.core.text.set
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mobile_lab_android.databinding.ItemImageSliderBinding
+import com.google.firebase.firestore.DocumentId
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.Timestamp
 
 class ProductDetailActivity : AppCompatActivity() {
     private var currentRating = 5
@@ -35,16 +39,6 @@ class ProductDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityProductDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        val mockReviews = listOf(
-            Review("Иван Иванов", "Отличный товар! Очень доволен покупкой.", 5),
-            Review("Анна Петрова", "Не совсем понравился, но в целом неплохо.", 3),
-            Review("Петр Сидоров", "Плохое качество, не рекомендую.", 1)
-        )
-
-        // Устанавливаем адаптер для RecyclerView
-        val reviewAdapter = ReviewAdapter(mockReviews)
-        binding.recyclerViewReviews.adapter = reviewAdapter
 
         val stars = listOf(
             binding.star1,
@@ -121,12 +115,15 @@ class ProductDetailActivity : AppCompatActivity() {
                     binding.etReview.setText("")
                     currentRating = 5
                     updateStars(stars, currentRating)
+                    updateReviews()
                 }
 
             } else {
                 Toast.makeText(this, "Отзыв не может быть пустым", Toast.LENGTH_SHORT).show()
             }
         }
+
+        updateReviews()
     }
 
     private fun updateStars(stars: List<ImageView>, rating: Int) {
@@ -166,6 +163,7 @@ class ProductDetailActivity : AppCompatActivity() {
                 .add(reviewData)
                 .addOnSuccessListener {
                     Toast.makeText(this, "Отзыв успешно добавлен", Toast.LENGTH_SHORT).show()
+                    updateReviews()
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Ошибка добавления отзыва: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -203,6 +201,50 @@ class ProductDetailActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateReviews() {
+        //binding.progressBar.visibility = View.VISIBLE
+
+        productId?.let { id ->
+            // Получаем отзывы из Firestore
+            val db = FirebaseFirestore.getInstance()
+            db.collection("products")
+                .document(id)
+                .collection("reviews")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    // Преобразуем данные в список отзывов
+                    val reviews = snapshot.documents.mapNotNull { document ->
+                        Log.d("Firestore", "Document data: ${document.data}")
+                        document.toObject(Review::class.java)?.copy(id = document.id)
+                    }
+
+                    //                   doc.toObject(ProductModel::class.java)?.copy(
+                    //                        id = doc.id,
+                    //                        isFavorite = favoriteProductIds.contains(doc.id)
+                    //                    )
+
+                    // Устанавливаем адаптер для RecyclerView
+                    val reviewAdapter = ReviewAdapter(reviews)
+                    binding.recyclerViewReviews.adapter = reviewAdapter
+
+                    // Скрываем индикатор загрузки
+                    //binding.progressBar.visibility = View.GONE
+                }
+                .addOnFailureListener { exception ->
+                    // Обработка ошибки
+                    Toast.makeText(
+                        context,
+                        "Ошибка загрузки: ${exception.localizedMessage}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    // Скрываем индикатор загрузки
+                    //binding.progressBar.visibility = View.GONE
+                }
+        }
+    }
+
     override fun onBackPressed() {
         setResult(RESULT_OK)
         super.onBackPressed()
@@ -226,8 +268,14 @@ class ImageSliderAdapter(private val imageUrls: List<String>) : RecyclerView.Ada
     class ImageSliderViewHolder(val binding: ItemImageSliderBinding) : RecyclerView.ViewHolder(binding.root)
 }
 
-data class Review(val userName: String, val comment: String, val rating: Int)
-
+data class Review(
+    @DocumentId val id: String? = null,
+    val userId: String = "",
+    val userName: String = "",
+    val rating: Int = 0,
+    val comment: String = "",
+    //val timestamp: Long = 0L
+)
 class ReviewAdapter(private val reviews: List<Review>) : RecyclerView.Adapter<ReviewAdapter.ReviewViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReviewViewHolder {
