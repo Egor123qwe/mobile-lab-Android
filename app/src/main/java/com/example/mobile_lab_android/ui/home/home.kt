@@ -14,7 +14,6 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Начальная загрузка фрагмента и выделение "Товары"
         replaceFragment(ProductsFragment())
         updateSelectedTab(binding.btnProducts)
 
@@ -41,16 +40,13 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun updateSelectedTab(selectedView: TextView) {
-        // Сбрасываем стиль и цвет текста для всех
         resetTabStyles()
 
-        // Выделяем выбранный
         selectedView.setBackgroundResource(R.drawable.selected_tab_background)
         selectedView.setTextColor(resources.getColor(android.R.color.white))
     }
 
     private fun resetTabStyles() {
-        // Сбрасываем фон и делаем текст серым
         val tabs = listOf(binding.btnProfile, binding.btnProducts, binding.btnFavorites)
         for (tab in tabs) {
             tab.background = null

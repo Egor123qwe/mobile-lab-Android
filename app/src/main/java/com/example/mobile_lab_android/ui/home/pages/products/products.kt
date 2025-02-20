@@ -1,10 +1,12 @@
 package com.example.mobile_lab_android
 
+import android.app.Activity.RESULT_OK
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SearchView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,8 +17,14 @@ class ProductsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val authViewModel: Auth by viewModels()
-    private val productViewModel: Product by viewModels { ProductFactory(authViewModel) }
+    private val productViewModel: Product by viewModels { ProductFactory(authViewModel, requireContext()) }
     private lateinit var productAdapter: ProductAdapter
+
+    private val startForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            productViewModel.loadProducts()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -68,6 +76,8 @@ class ProductsFragment : Fragment() {
             }
         })
     }
+
+
 
     override fun onDestroyView() {
         super.onDestroyView()

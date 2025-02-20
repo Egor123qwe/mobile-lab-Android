@@ -37,7 +37,7 @@ class ProfileFragment : Fragment() {
         }
 
         binding.btnSignOut.setOnClickListener {
-            authViewModel.signOut() // Используем метод из ViewModel для выхода
+            authViewModel.signOut()
             Toast.makeText(requireContext(), "Выход выполнен", Toast.LENGTH_SHORT).show()
 
             val intent = Intent(requireContext(), MainActivity::class.java)
@@ -53,14 +53,12 @@ class ProfileFragment : Fragment() {
     }
 
     private fun loadProfileData() {
-        // Проверка на наличие текущего пользователя
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
             Toast.makeText(requireContext(), "Пользователь не авторизован", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Показываем прелоудер и скрываем остальной интерфейс
         binding.progressBar.visibility = View.VISIBLE
         binding.contentLayout.visibility = View.GONE
 
@@ -80,17 +78,14 @@ class ProfileFragment : Fragment() {
                     binding.etSocialMedia.setText(profile.socialMedia)
                     binding.etAdditionalInfo.setText(profile.additionalInfo)
 
-                    // Показываем интерфейс после загрузки
                     binding.contentLayout.visibility = View.VISIBLE
                 } else {
                     Toast.makeText(requireContext(), "Профиль не найден", Toast.LENGTH_SHORT).show()
                 }
-                // Скрываем прелоудер после успешной загрузки
                 binding.progressBar.visibility = View.GONE
             }
             .addOnFailureListener {
                 Toast.makeText(requireContext(), "Ошибка загрузки профиля", Toast.LENGTH_SHORT).show()
-                // Скрываем прелоудер в случае ошибки
                 binding.progressBar.visibility = View.GONE
             }
     }

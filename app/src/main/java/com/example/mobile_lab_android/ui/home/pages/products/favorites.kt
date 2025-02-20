@@ -15,7 +15,7 @@ class FavoritesFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val authViewModel: Auth by viewModels()
-    private val productViewModel: Product by viewModels { ProductFactory(authViewModel, true) }
+    private val productViewModel: Product by viewModels { ProductFactory(authViewModel, requireContext(), true) }
     private lateinit var productAdapter: ProductAdapter
 
     override fun onCreateView(

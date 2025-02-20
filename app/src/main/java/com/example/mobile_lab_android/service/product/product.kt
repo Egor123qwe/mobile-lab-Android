@@ -1,25 +1,33 @@
 package com.example.mobile_lab_android
 
-import android.content.Intent
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import com.example.mobile_lab_android.models.ProductModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.mobile_lab_android.models.ProductModel
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mobile_lab_android.databinding.ItemProductBinding
+import android.content.Intent
+import androidx.lifecycle.ViewModelProvider
+import android.os.Build
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 
-class ProductFactory(private val authViewModel: Auth, private val onlyFavorite: Boolean = false) : ViewModelProvider.Factory {
+
+class ProductFactory(private val authViewModel: Auth, private val context: Context, private val onlyFavorite: Boolean = false) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(Product::class.java)) {
-            return Product(authViewModel, onlyFavorite) as T
+            return Product(authViewModel, context, onlyFavorite) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -53,7 +61,6 @@ class ProductAdapter(
         fun bind(product: ProductModel) {
             binding.productName.text = product.name
 
-            // Обновляем состояние избранного
             binding.favoriteIcon.setImageResource(
                 if (product.isFavorite == true)
                     R.drawable.ic_star_filled
@@ -61,12 +68,10 @@ class ProductAdapter(
                     R.drawable.ic_star_border
             )
 
-            // Нажатие на звёздочку
             binding.favoriteIcon.setOnClickListener {
                 onFavoriteClick(product)
             }
 
-            // Переход на экран с деталями товара
             binding.root.setOnClickListener {
                 val context = binding.root.context
                 val intent = Intent(context, ProductDetailActivity::class.java).apply {
@@ -81,8 +86,11 @@ class ProductAdapter(
     }
 }
 
-class Product(private val authViewModel: Auth, private val onlyFavorite: Boolean = false) : ViewModel() {
+class Product(private val authViewModel: Auth, private val context: Context, private val onlyFavorite: Boolean = false) : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
+
+    private val sharedPreferences: SharedPreferences = context.getSharedPreferences("product_cache", Context.MODE_PRIVATE)
+    private val gson = Gson()
 
     private val _products = MutableLiveData<List<ProductModel>>(emptyList())
     val products: LiveData<List<ProductModel>> get() = _products
@@ -101,8 +109,21 @@ class Product(private val authViewModel: Auth, private val onlyFavorite: Boolean
     }
 
     fun loadProducts() {
-        if (_isLoading.value ?: false) return
+        if (_isLoading.value == true) return
         _isLoading.value = true
+
+        if (!checkForInternet(context)) {
+            val cachedProductsJson = sharedPreferences.getString("cached_products", null)
+            if (cachedProductsJson != null) {
+                val type = object : TypeToken<List<ProductModel>>() {}.type
+                val cachedProducts = gson.fromJson<List<ProductModel>>(cachedProductsJson, type)
+                _products.value = cachedProducts
+                _filteredProducts.value =
+                    if (onlyFavorite) cachedProducts.filter { it.isFavorite } else cachedProducts
+                _isLoading.value = false
+                return
+            }
+        }
 
         val userId = authViewModel.userId.value ?: return
 
@@ -123,6 +144,8 @@ class Product(private val authViewModel: Auth, private val onlyFavorite: Boolean
                         isFavorite = favoriteProductIds.contains(doc.id)
                     )
                 }
+
+                sharedPreferences.edit().putString("cached_products", gson.toJson(newProducts)).apply()
 
                 Log.d("ProductViewModel", "Loaded products: ${newProducts.size}")
                 _products.value = newProducts
@@ -174,11 +197,38 @@ class Product(private val authViewModel: Auth, private val onlyFavorite: Boolean
             _filteredProducts.value = products
         }
     }
+
     fun searchProducts(query: String) {
         _products.value?.let { products ->
             _filteredProducts.value = if (query.isEmpty()) products else {
                 products.filter { it.name.contains(query, ignoreCase = true) }
             }
+        }
+    }
+
+    private fun checkForInternet(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            val network = connectivityManager.activeNetwork ?: return false
+
+            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+            return when {
+
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+
+
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION") val networkInfo =
+                connectivityManager.activeNetworkInfo ?: return false
+            @Suppress("DEPRECATION")
+            return networkInfo.isConnected
         }
     }
 }
