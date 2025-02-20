@@ -6,11 +6,13 @@
     android:padding="16dp">
 
     <!-- Поле поиска -->
-    <androidx.appcompat.widget.SearchView
+    <SearchView
         android:id="@+id/searchView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:queryHint="Поиск избранных товаров" />
+        android:queryHint="Фильтрация и поиск по названию"
+        android:iconifiedByDefault="false"
+        android:background="@android:color/white"/>
 
     <!-- Прогресс-бар загрузки -->
     <ProgressBar

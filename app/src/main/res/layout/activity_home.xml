@@ -11,13 +11,14 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="10dp"
-        android:elevation="5dp">
+        android:elevation="5dp"
+        android:layout_marginTop="20dp">
 
         <TextView
             android:id="@+id/btnProfile"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Профиль"
+            android:text="  Профиль"
             android:textSize="18sp"
             android:padding="10dp"
             android:layout_weight="1"/>
@@ -26,7 +27,7 @@
             android:id="@+id/btnProducts"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Товары"
+            android:text="  Товары"
             android:textSize="18sp"
             android:padding="10dp"
             android:layout_weight="1"/>
@@ -35,7 +36,7 @@
             android:id="@+id/btnFavorites"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Избранное"
+            android:text="  Избранное"
             android:textSize="18sp"
             android:padding="10dp"
 

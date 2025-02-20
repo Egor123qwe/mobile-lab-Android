@@ -53,18 +53,27 @@ class ProductAdapter(
         fun bind(product: ProductModel) {
             binding.productName.text = product.name
 
+            // Обновляем состояние избранного
+            binding.favoriteIcon.setImageResource(
+                if (product.isFavorite == true)
+                    R.drawable.ic_star_filled
+                else
+                    R.drawable.ic_star_border
+            )
+
+            // Нажатие на звёздочку
             binding.favoriteIcon.setOnClickListener {
                 onFavoriteClick(product)
             }
 
-            // Добавляем обработчик клика по товару
+            // Переход на экран с деталями товара
             binding.root.setOnClickListener {
                 val context = binding.root.context
                 val intent = Intent(context, ProductDetailActivity::class.java).apply {
                     putExtra("product_id", product.id)
                     putExtra("product_name", product.name)
-                    putExtra("product_description", product.description) // Передаем описание
-                    putStringArrayListExtra("product_images", ArrayList(product.images)) // Передаем список URL изображений
+                    putExtra("product_description", product.description)
+                    putStringArrayListExtra("product_images", ArrayList(product.images))
                 }
                 context.startActivity(intent)
             }
@@ -162,10 +171,9 @@ class Product(private val authViewModel: Auth, private val onlyFavorite: Boolean
         if (productId == null) return
         _products.value?.let { products ->
             _products.value = products.map { if (it.id == productId) it.copy(isFavorite = isFavorite) else it }
-            _filteredProducts.value = if (onlyFavorite) products.filter { it.isFavorite } else products
+            _filteredProducts.value = products
         }
     }
-
     fun searchProducts(query: String) {
         _products.value?.let { products ->
             _filteredProducts.value = if (query.isEmpty()) products else {

@@ -53,7 +53,17 @@ class ProfileFragment : Fragment() {
     }
 
     private fun loadProfileData() {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        // Проверка на наличие текущего пользователя
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Пользователь не авторизован", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Показываем прелоудер и скрываем остальной интерфейс
+        binding.progressBar.visibility = View.VISIBLE
+        binding.contentLayout.visibility = View.GONE
+
         db.collection("users").document(userId).get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
@@ -69,15 +79,21 @@ class ProfileFragment : Fragment() {
                     binding.etWebsite.setText(profile.website)
                     binding.etSocialMedia.setText(profile.socialMedia)
                     binding.etAdditionalInfo.setText(profile.additionalInfo)
+
+                    // Показываем интерфейс после загрузки
+                    binding.contentLayout.visibility = View.VISIBLE
                 } else {
                     Toast.makeText(requireContext(), "Профиль не найден", Toast.LENGTH_SHORT).show()
                 }
+                // Скрываем прелоудер после успешной загрузки
+                binding.progressBar.visibility = View.GONE
             }
             .addOnFailureListener {
                 Toast.makeText(requireContext(), "Ошибка загрузки профиля", Toast.LENGTH_SHORT).show()
+                // Скрываем прелоудер в случае ошибки
+                binding.progressBar.visibility = View.GONE
             }
     }
-
     private fun saveProfileData() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val profile = ProfileModel(
@@ -129,9 +145,21 @@ class ProfileFragment : Fragment() {
             binding.etWebsite,
             binding.etSocialMedia,
             binding.etAdditionalInfo
-        ).forEach { it.isEnabled = isEditing }
+        ).forEach {
+            it.setFocusableInTouchMode(isEditing)
+            it.clearFocus()
+        }
 
+        binding.btnDeleteAccount.visibility = if (isEditing) View.VISIBLE else View.GONE
         binding.btnEditSave.text = if (isEditing) "Сохранить" else "Редактировать"
+
+        val newColor = if (isEditing) {
+            resources.getColor(R.color.green_500)
+        } else {
+            resources.getColor(R.color.blue_200)
+        }
+
+        binding.btnEditSave.backgroundTintList = android.content.res.ColorStateList.valueOf(newColor)
     }
 
     override fun onDestroyView() {
